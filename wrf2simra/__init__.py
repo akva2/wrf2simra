@@ -75,19 +75,13 @@ class WRFConverter:
 
             W = vtk_to_numpy(new_fields.GetPointData().GetArray('WIND'))
 
-            nx = outputGrid.GetDimensions()[0]
-            ny = outputGrid.GetDimensions()[1]
-            nz = outputGrid.GetDimensions()[2]
+            # Simra numbering has i, j swapped (col major) but k still
+            # running fastest (as if row major)
+            nx, ny, nz = outputGrid.GetDimensions()
+            W = W.reshape(nx, ny, nz, -1).transpose(1, 0, 2, 3).reshape(-1, 3)
 
-            W2 = np.zeros(W.shape)
-            for i in range(0, nx):
-                for j in range(0, ny):
-                    for k in range(0, nz):
-                        vtkIdx = i + (j + k * ny) * nx
-                        simraIdx = k + (i + j * nx) * nz
-                        W2[simraIdx,:] = W[vtkIdx,:]
             z = np.zeros((W.shape[0], 8))
-            W = np.hstack([W2, z])
+            W = np.hstack([W, z])
             strat = np.float32(np.zeros((W.shape[0], 1)))
 
             ftype = np.dtype(f'<f4')

@@ -74,14 +74,16 @@ class WRFConverter:
             new_fields = self._interpolate(inputGrid, outputGrid)
 
             W = vtk_to_numpy(new_fields.GetPointData().GetArray('WIND'))
+            V = vtk_to_numpy(new_fields.GetPointData().GetArray('vtkValidPointMask'))
 
             # Simra numbering has i, j swapped (col major) but k still
             # running fastest (as if row major)
             nx, ny, nz = outputGrid.GetDimensions()
             W = W.reshape(nx, ny, nz, -1).transpose(1, 0, 2, 3).reshape(-1, 3)
+            V = np.float32(V.reshape(nx, ny, nz, -1).transpose(1, 0, 2, 3).reshape(-1, 1))
 
-            z = np.zeros((W.shape[0], 8))
-            W = np.hstack([W, z])
+            z = np.zeros((W.shape[0], 7))
+            W = np.hstack([W, V, z])
             strat = np.float32(np.zeros((W.shape[0], 1)))
 
             ftype = np.dtype(f'<f4')
